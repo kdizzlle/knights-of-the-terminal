@@ -1,4 +1,6 @@
 # knights-of-the-terminal
 
-## Team Members
+### Authors
+
+Kelly Williams
 Mia Diliberti-Brandenburg
