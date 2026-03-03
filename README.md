@@ -1,3 +1,8 @@
 # knights-of-the-terminal
 
--Sebastian Graciano
+
+=======
+### Authors
+
+Sebastian Graciano
+Kelly Williams
