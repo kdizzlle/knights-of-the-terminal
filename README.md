@@ -2,5 +2,7 @@
 
 ### Authors
 
+Sebastian Graciano
 Kelly Williams
 Mia Diliberti-Brandenburg
+
