@@ -48,6 +48,11 @@ sequenceDiagram
 	Engine ->> Parser: parse "go" options (movetime/wtime/etc.)
 	Engine ->> MoveGen: legalMoves = Position.legalMoves()
 	activate MoveGen
+	MoveGen ->> RuleChecker: np.whiteToMove()
+	activate RuleChecker
+	RuleChecker ->> isSquareAttacked: return true/false if square attacked
+	RuleChecker ->> MoveGen: !np.inCheck(!np.whiteToMove())
+	deactivate RuleChecker
 	MoveGen -->> Engine: returns legalMoves list
 	deactivate MoveGen
 	
