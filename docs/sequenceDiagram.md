@@ -24,7 +24,15 @@ sequenceDiagram
 	Engine ->> Engine: parse "isready"
 	Engine -->> Host: "readyok"
 	deactivate Engine
-	
+
+    Engine ->> Position: startPos()
+    activate Position
+    Position ->> Position: parse FEN
+    Position ->> Position: fill board[0..63]
+    Position ->> Position: set whiteToMove
+    Position -->> Engine: new Position
+    deactivate Position
+
 	Host ->> Engine: "ucinewgame"
 	activate Engine
 	Engine ->> Position: Position.startPos() // reset position to starting
