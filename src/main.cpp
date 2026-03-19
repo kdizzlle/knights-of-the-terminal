@@ -73,6 +73,19 @@ struct Position
     }
 };
 
+// from regular sample code, may change later if it's more c++-like
+static int sq_index(const char *s) {
+    int file = s[0] - 'a';
+    int rank = s[1] - '1';
+    return rank * 8 + file;
+}
+
+static void index_to_sq(int idx, char out[3]) {
+    out[0] = (char) ('a' + (idx % 8));
+    out[1] = (char) ('1' + (idx / 8));
+    out[2] = 0;
+}
+
 int main()
 {
     vector<Move> moves = legalMoves();
@@ -182,4 +195,12 @@ Position makeMove(const Position &pos, const Move &m)
     np.white_to_move = false;
     
     return np;
+}
+
+static void print_bestmove(Move m) {
+    char a[3], b[3];
+    index_to_sq(m.from, a);
+    index_to_sq(m.to, b);
+    if (m.promo) std::cout<<"bestmove "<< a << b << m.promo << std::end1;
+    else std::cout<<"bestmove "<< a << b << std::end1;
 }
