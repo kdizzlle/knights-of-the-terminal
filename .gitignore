@@ -1,0 +1,18 @@
+# Compiled binaries
+main
+*.out
+*.exe
+
+# Object files
+*.o
+*.obj
+
+# Build folders
+build/
+bin/
+
+# VS Code
+.vscode/
+
+# Mac/Linux junk
+.DS_Store
