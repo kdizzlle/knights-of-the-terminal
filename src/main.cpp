@@ -11,6 +11,8 @@ int pseudoLegalMoves();
 Position makeMove(const Move &m);
 vector<Move> legalMoves();
 
+Move moves[] = {};
+
 struct Move
 {
     // fill in move data
@@ -44,12 +46,12 @@ vector<Move> legalMoves()
 {
     vector<Move> out;
 
-    for (const Move &m : pseudoLegalMoves())
+    for (int i = 0; i < pseudoLegalMoves(); i++)
     {
-        Position np = makeMove(m);
+        Position np = makeMove(moves[i]);
         if (!np.inCheck(!np.white_to_move))
         {
-            out.push_back(m);
+            out.push_back(moves[i]);
         }
     }
 
