@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <cctype>
+#include <cstring>
 
 using namespace std;
 
@@ -15,14 +16,55 @@ Move moves[] = {};
 
 struct Move
 {
-    int from, to;
-    char promo;
+    int from;
+    int to;
+    char promo;     // 0 = none, else 'q'/'r'/'b'/'n'
+
+    Move() : from(0), to(0), promo(0) {}
+    Move(int f, int t, char p = 0) : from(f), to(t), promo(p) {}
+
+    static int squareIndex(const char* sq) {
+        int file = sq[0] - 'a';
+        int rank = sq[1] - '1';
+        return rank * 8 + file;
+    }
+
+    // parse a UCI move string
+    static Move fromUci(const char* s) {
+        if (!s || strlen(s) < 4)
+            return Move(0, 0, 0);
+        char fromSq[3] = {s[0], s[1], '\0'};
+        char toSq[3] = {s[2], s[3], '\0'};
+        int from = squareIndex(fromSq);
+        int to = squareIndex(toSq);
+        char promo = (strlen(s) >= 5) ? s[4] : 0;
+        return Move(from, to, promo);
+    }
+
+    // Convert back to UCI string
+    static void indexToSq(int idx, char out[3]) {
+        out[0] = 'a' + (idx % 8);
+        out[1] = '1' + (idx / 8);
+        out[2] = '\0';
+    }
+ 
+    void toUci(char out[6]) const {
+        char f[3], t[3];
+        indexToSq(from, f);
+        indexToSq(to,   t);
+        out[0] = f[0]; out[1] = f[1];
+        out[2] = t[0]; out[3] = t[1];
+        if (promo) { out[4] = promo; out[5] = '\0'; }
+        else        { out[4] = '\0'; }
+    }
 };
+
+//---------------------------------------------------------------
 
 struct Position
 {
     bool white_to_move;
-    char b;
+    char b[64];
 
     bool inCheck(bool side) const
     {
@@ -120,11 +162,39 @@ static int pseudoLegalMoves(const Position *p, Move *moves)
         return n;
     }
 }
-Position makeMove(const Move &m)
+Position makeMove(const Position &pos, const Move &m)
 {
-    Position p;
-    p.white_to_move = false;
-    return p;
+    Position np;
+
+    //copy the board
+    memcpy(np.b, pos.b, 64);
+
+    //grab the piece that is moving
+    char piece = np.b[m.from];
+
+    //vacate the source square
+    np.b[m.from] = '.';
+
+    //determine what actually lands on the target square
+    char placed = piece;
+
+    //promo: move.promo is non-zero and the moving piece is a pawn
+    //white pawn = P       black pawn = p
+    if(m.promo != 0 && (piece == 'P' || piece == 'p')){
+        if(piece == 'P'){
+            placed = (char)toupper((unsigned char)m.promo);
+        } else {
+            placed = (char)tolower((unsigned char)m.promo);
+        }
+    }
+
+    //place the piece on the target square
+    np.b[m.to] = placed;
+
+    //flip the turnn
+    np.white_to_move = false;
+    
+    return np;
 }
 
 static void print_bestmove(Move m) {
