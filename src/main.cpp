@@ -11,6 +11,8 @@ struct Position;
 int pseudoLegalMoves();
 Position makeMove(const Move &m);
 vector<Move> legalMoves();
+//need to make a unified isWhitePiece function and also unify how we call this
+//right now I see isWhitePiece and is_white_piece. this looks like a placeholder for a future implementation.
 
 Move moves[] = {};
 
@@ -111,6 +113,98 @@ vector<Move> legalMoves()
     return out;
 }
 
+// Move generation for individual pieces
+
+void genRook(const Position *p, int from, bool white, Move *moves, int *n, bool castleflag) {
+    const int d = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+    bool finish;
+    bool finishl, finishr, finishu, finishd;
+    Move() move[28];
+
+    if (!castleflag)
+    {
+        while(!finish){
+        for(int i = 1; i <= 7; i++){
+            int idxl = from + (i * d[0]);
+            int idxr = from + (i * d[2]);
+            int idxu = from + (i * d[6]);
+            int idxd = from + (i * d[8]);
+            if (p->b[idxl] != '.' && !finishl){
+                if(IsWhitePiece(p->b[idxl]))
+                    idxl = -1; //can't move this direction
+                else{
+                    move[i-1].from = from;
+                    move[i-1].to = idxl;
+                    move[i-1].promo = 0;
+                    n++;
+                    finishl = TRUE; //capture piece and mark direction as closed
+                }
+            }
+            else if (p->b[idxl] == '.' && !finishl){
+                move[i-1].from = from;
+                move[i-1].to = idxl;
+                move[i-1].promo = 0;
+                n++;
+            }
+        if (p->b[idxr] != '.' && !finishr){
+            if(IsWhitePiece(p->b[idxr]))
+                idxl = -1; //can't move this direction
+            else{
+                move[i-1].from = from;
+                move[i-1].to = idxr;
+                move[i-1].promo = 0;
+                n++;
+                finishr = TRUE; //capture piece and mark direction as closed
+            }
+        }
+        else if (p->b[idxr] = '.' && finishr){
+            move[i-1].from = from;
+            move[i-1].to = idxr;
+            move[i-1].promo = 0;
+            n++;
+        }
+        if (p->b[idxu] != '.' && !finishu){
+            if(IsWhitePiece(p->b[idxu]))
+                idxl = -1; //can't move this direction
+            else{
+                move[i-1].from = from;
+                move[i-1].to = idxu;
+                move[i-1].promo = 0;
+                finishr = TRUE; //capture piece and mark direction as closed
+                n++;
+            }
+        }
+        else if (p->b[idxu] = '.' && finishu){
+            move[i-1].from = from;
+            move[i-1].to = idxu;
+            move[i-1].promo = 0;
+            n++;
+        }
+    if (p->b[idxd] != '.' && !finishd){
+            if(IsWhitePiece(p->b[idxd]))
+                idxl = -1; //can't move this direction
+            else{
+                move[i-1].from = from;
+                move[i-1].to = idxd;
+                move[i-1].promo = 0;
+                finishd = TRUE; //capture piece and mark direction as closed
+                n++;
+            }
+    }
+        else if (p->b[idxd] = '.' && finishd){
+            move[i-1].from = from;
+            move[i-1].to = idxd;
+            move[i-1].promo = 0;
+            n++;
+        }
+        }
+    }
+    }
+    else
+    {   
+        return from; // pass back the index - change later?
+    }
+}
 
 static void genKnight(const Pos* p, int from, bool white, Move* moves, int* n) {
     static const int offsets[8][2] = {
@@ -136,6 +230,46 @@ static void genKnight(const Pos* p, int from, bool white, Move* moves, int* n) {
 
         addMove(moves, n, from, to, 0);
     }
+}
+
+static int pseudoLegalMoves(const Pos* p, Move* moves) {
+    int n = 0;
+    const bool usWhite = p->white_to_move;
+
+    for (int i = 0; i < 64; i++) {
+        const char pc = p->b[i];
+        if (pc == '.') continue;
+
+        const bool white = isWhitePiece(pc);
+        if (white != usWhite) continue;
+
+        const char up = static_cast<char>(std::toupper(static_cast<unsigned char>(pc)));
+
+        if (up == 'P') {
+            genPawn(p, i, white, moves, &n);
+        }
+        else if (up == 'N') {
+            genKnight(p, i, white, moves, &n);
+        }
+        else if (up == 'B') {
+            static const int d[4][2] = { {1, 1}, {1, -1}, {-1, 1}, {-1, -1} };
+            genBishop(p, i, white, d, 4, moves, &n);
+        }
+        else if (up == 'R') {
+            static const int d[4][2] = { {1, 0}, {-1, 0}, {0, 1}, {0, -1} };
+            genRook(p, i, white, d, 4, moves, &n);
+        }
+        else if (up == 'Q') {
+            static const int d[8][2] = { {1,1},{1,-1},{-1,1},{-1,-1},
+                                         {1,0},{-1,0},{0,1},{0,-1} };
+            genQueen(p, i, white, d, 8, moves, &n);
+        }
+        else if (up == 'K') {
+            genKing(p, i, white, moves, &n);
+        }
+    }
+
+    return n;
 }
 
 static void genQueen(const Position *p, int from, bool white, Move *moves, int *n)
@@ -190,41 +324,22 @@ static void genKing(const Position *p, int from, bool white, Move *moves, int *n
         { 1,  0}, {-1,  0}, { 0,  1}, { 0, -1}
     };
 
-    int r = from / 8;
-    int f = from % 8;
+    int fromRow = from / 8;
+    int fromCol = from % 8;
 
-    for (int di = 0; di < 8; di++)
-    {
-        int df = dirs[di][0];
-        int dr = dirs[di][1];
+    for (int i = 0; i < 8; i++) {
+        int toRow = fromRow + dirs[i][1];
+        int toCol = fromCol + dirs[i][0];
 
-        int cr = r + dr;
-        int cf = f + df;
+        if (toRow < 0 || toRow > 7 || toCol < 0 || toCol > 7) continue;
 
-        while (cr >= 0 && cr < 8 && cf >= 0 && cf < 8)
-        {
-            int to = cr * 8 + cf;
-            char target = p->b[to];
+        int to = toRow * 8 + toCol;
+        char target = p->b[to];
 
-            if (target == '.')
-            {
-                moves[*n] = Move(from, to);
-                (*n)++;
-            }
-            else
-            {
-                bool targetWhite = isWhitePiece(target);
-                if (targetWhite != white)
-                {
-                    moves[*n] = Move(from, to);
-                    (*n)++;
-                }
-                break;
-            }
+        if (target != '.' && isWhitePiece(target) == white) continue;
 
-            cr += dr;
-            cf += df;
-        }
+        moves[*n] = Move(from, to);
+        (*n)++;
     }
 }
 
@@ -384,6 +499,6 @@ static void print_bestmove(Move m) {
     char a[3], b[3];
     index_to_sq(m.from, a);
     index_to_sq(m.to, b);
-    if (m.promo) std::cout<<"bestmove "<< a << b << m.promo << std::end1;
-    else std::cout<<"bestmove "<< a << b << std::end1;
+    if (m.promo) std::cout<<"bestmove "<< a << b << m.promo << std::endl;
+    else std::cout<<"bestmove "<< a << b << std::endl;
 }
