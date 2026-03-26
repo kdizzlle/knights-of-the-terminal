@@ -114,54 +114,75 @@ vector<Move> legalMoves()
     return out;
 }
 
-static int pseudoLegalMoves(const Position *p, Move *moves)
-{
+
+static void genKnight(const Pos* p, int from, bool white, Move* moves, int* n) {
+    static const int offsets[8][2] = {
+        {-2, -1}, {-2, 1},
+        {-1, -2}, {-1, 2},
+        { 1, -2}, { 1, 2},
+        { 2, -1}, { 2, 1}
+    };
+
+    int fromRow = from / 8;
+    int fromCol = from % 8;
+
+    for (int i = 0; i < 8; i++) {
+        int toRow = fromRow + offsets[i][0];
+        int toCol = fromCol + offsets[i][1];
+
+        if (toRow < 0 || toRow > 7 || toCol < 0 || toCol > 7) continue;
+
+        int to = toRow * 8 + toCol;
+        char target = p->b[to];
+
+        if (target != '.' && isWhitePiece(target) == white) continue;
+
+        addMove(moves, n, from, to, 0);
+    }
+}
+
+
+
+static int pseudoLegalMoves(const Pos* p, Move* moves) {
     int n = 0;
     const bool usWhite = p->white_to_move;
 
-    for (int i = 0; i < 64; i++)
-    {
+    for (int i = 0; i < 64; i++) {
         const char pc = p->b[i];
-        if (pc == '.')
-            continue;
+        if (pc == '.') continue;
 
-        bool white = isWhitePiece(pc);
-        if (white != usWhite)
-            continue;
+        const bool white = isWhitePiece(pc);
+        if (white != usWhite) continue;
 
         const char up = static_cast<char>(std::toupper(static_cast<unsigned char>(pc)));
 
-        switch (up)
-        {
-        case 'P':
+        if (up == 'P') {
             genPawn(p, i, white, moves, &n);
-            break;
-        case 'N':
-            genKnite(p, i, white, moves, &n);
-            break;
-        case 'B':
-            static const int d = {{1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
-            genBishop(p, i, white, moves, &n);
-            break;
-        case 'R':
-            d = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
-            genRook(p, i, white, moves, &n);
-            break;
-        case 'Q':
-            static const int d = {{1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
-            genQueen(p, i, white, moves, &n);
-            break;
-        case 'K':
-            static const int d[8][2] = {{1, 1}, {1, -1}, {-1, 1}, {-1, -1}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}};
-            genKing(p, i, white, moves, &n);
-            break;
-        default:
-            // TODO: handle exception
-            break;
         }
-        return n;
+        else if (up == 'N') {
+            genKnight(p, i, white, moves, &n);
+        }
+        else if (up == 'B') {
+            static const int d[4][2] = { {1, 1}, {1, -1}, {-1, 1}, {-1, -1} };
+            genBishop(p, i, white, d, 4, moves, &n);
+        }
+        else if (up == 'R') {
+            static const int d[4][2] = { {1, 0}, {-1, 0}, {0, 1}, {0, -1} };
+            genRook(p, i, white, d, 4, moves, &n);
+        }
+        else if (up == 'Q') {
+            static const int d[8][2] = { {1,1},{1,-1},{-1,1},{-1,-1},
+                                         {1,0},{-1,0},{0,1},{0,-1} };
+            genQueen(p, i, white, d, 8, moves, &n);
+        }
+        else if (up == 'K') {
+            genKing(p, i, white, moves, &n);
+        }
     }
+
+    return n;
 }
+
 Position makeMove(const Position &pos, const Move &m)
 {
     Position np;
