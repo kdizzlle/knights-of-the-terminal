@@ -93,10 +93,7 @@ int main()
     return 0;
 }
 
-/*
 
-
-*/
 
 vector<Move> legalMoves()
 {
@@ -162,6 +159,124 @@ static int pseudoLegalMoves(const Position *p, Move *moves)
         return n;
     }
 }
+
+static void genQueen(const Position *p, int from, bool white, Move *moves, int *n)
+{
+    static const int dirs[8][2] = {
+        { 1,  1}, { 1, -1}, {-1,  1}, {-1, -1},
+        { 1,  0}, {-1,  0}, { 0,  1}, { 0, -1}
+    };
+
+    int r = from / 8;
+    int f = from % 8;
+
+    for (int di = 0; di < 8; di++)
+    {
+        int df = dirs[di][0];
+        int dr = dirs[di][1];
+
+        int cr = r + dr;
+        int cf = f + df;
+
+        while (cr >= 0 && cr < 8 && cf >= 0 && cf < 8)
+        {
+            int to = cr * 8 + cf;
+            char target = p->b[to];
+
+            if (target == '.')
+            {
+                moves[*n] = Move(from, to);
+                (*n)++;
+            }
+            else
+            {
+                bool targetWhite = isWhitePiece(target);
+                if (targetWhite != white)
+                {
+                    moves[*n] = Move(from, to);
+                    (*n)++;
+                }
+                break;
+            }
+
+            cr += dr;
+            cf += df;
+        }
+    }
+}
+
+static bool is_square_attacked(const Position *p, int sq, bool by_white) {
+    int r = sq / 8, f = sq % 8;
+
+    // pawns
+    if (by_white) {
+        if (r > 0 && f > 0 && p->b[(r - 1) * 8 + (f - 1)] == 'P') return true;
+        if (r > 0 && f < 7 && p->b[(r - 1) * 8 + (f + 1)] == 'P') return true;
+    } else {
+        if (r < 7 && f > 0 && p->b[(r + 1) * 8 + (f - 1)] == 'p') return true;
+        if (r < 7 && f < 7 && p->b[(r + 1) * 8 + (f + 1)] == 'p') return true;
+    }
+
+    // knights
+    static const int nd[8] = {-17, -15, -10, -6, 6, 10, 15, 17};
+    for (int i = 0; i < 8; i++) {
+        int to = sq + nd[i];
+        if (to < 0 || to >= 64) continue;
+        int tr = to / 8, tf = to % 8;
+        int dr = tr - r;
+        if (dr < 0) dr = -dr;
+        int df = tf - f;
+        if (df < 0) df = -df;
+        if (!((dr == 1 && df == 2) || (dr == 2 && df == 1))) continue;
+        char pc = p->b[to];
+        if (by_white && pc == 'N') return true;
+        if (!by_white && pc == 'n') return true;
+    }
+
+    // sliders
+    static const int dirs[8][2] = {
+        {1, 0}, {-1, 0}, {0, 1}, {0, -1},
+        {1, 1}, {1, -1}, {-1, 1}, {-1, -1}
+    };
+
+    for (int di = 0; di < 8; di++) {
+        int df = dirs[di][0], dr = dirs[di][1];
+        int cr = r + dr, cf = f + df;
+        while (cr >= 0 && cr < 8 && cf >= 0 && cf < 8) {
+            int idx = cr * 8 + cf;
+            char pc = p->b[idx];
+            if (pc != '.') {
+                int pc_white = is_white_piece(pc);
+                if (pc_white == by_white) {
+                    char up = static_cast<char>(std::toupper(static_cast<unsigned char>(pc)));
+                    int rook_dir = (di < 4);
+                    int bishop_dir = (di >= 4);
+                    if (up == 'Q') return true;
+                    if (rook_dir && up == 'R') return true;
+                    if (bishop_dir && up == 'B') return true;
+                    if (up == 'K' && (std::abs(cr - r) <= 1 && std::abs(cf - f) <= 1)) return true;
+                }
+                break;
+            }
+            cr += dr;
+            cf += df;
+        }
+    }
+
+    // king adjacency (extra safety)
+    for (int rr = r - 1; rr <= r + 1; rr++) {
+        for (int ff = f - 1; ff <= f + 1; ff++) {
+            if (rr < 0 || rr >= 8 || ff < 0 || ff >= 8) continue;
+            if (rr == r && ff == f) continue;
+            char pc = p->b[rr * 8 + ff];
+            if (by_white && pc == 'K') return true;
+            if (!by_white && pc == 'k') return true;
+        }
+    }
+
+    return false;
+}
+
 Position makeMove(const Position &pos, const Move &m)
 {
     Position np;
