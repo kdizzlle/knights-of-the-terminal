@@ -111,7 +111,6 @@ vector<Move> legalMoves()
     return out;
 }
 
-
 static void genKnight(const Pos* p, int from, bool white, Move* moves, int* n) {
     static const int offsets[8][2] = {
         {-2, -1}, {-2, 1},
@@ -137,8 +136,6 @@ static void genKnight(const Pos* p, int from, bool white, Move* moves, int* n) {
         addMove(moves, n, from, to, 0);
     }
 }
-
-
 
 static int pseudoLegalMoves(const Pos* p, Move* moves) {
     int n = 0;
@@ -338,4 +335,98 @@ static void print_bestmove(Move m) {
     index_to_sq(m.to, b);
     if (m.promo) std::cout<<"bestmove "<< a << b << m.promo << std::end1;
     else std::cout<<"bestmove "<< a << b << std::end1;
+}
+
+
+// Move generation for individual pieces
+
+void genRook(const Position *p, int from, bool white, Move *moves, int *n, bool castleflag) {
+    const int d = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+    bool finish;
+    bool finishl, finishr, finishu, finishd;
+    Move() move[28];
+
+    if (!castleflag)
+    {
+        while(!finish){
+        for(int i = 1; i <= 7; i++){
+            int idxl = from + (i * d[0]);
+            int idxr = from + (i * d[2]);
+            int idxu = from + (i * d[6]);
+            int idxd = from + (i * d[8]);
+            if (p->b[idxl] != '.' && !finishl){
+                if(IsWhitePiece(p->b[idxl]))
+                    idxl = -1; //can't move this direction
+                else{
+                    move[i-1].from = from;
+                    move[i-1].to = idxl;
+                    move[i-1].promo = 0;
+                    n++;
+                    finishl = TRUE; //capture piece and mark direction as closed
+                }
+            }
+            else if (p->b[idxl] == '.' && !finishl){
+                move[i-1].from = from;
+                move[i-1].to = idxl;
+                move[i-1].promo = 0;
+                n++;
+            }
+        if (p->b[idxr] != '.' && !finishr){
+            if(IsWhitePiece(p->b[idxr]))
+                idxl = -1; //can't move this direction
+            else{
+                move[i-1].from = from;
+                move[i-1].to = idxr;
+                move[i-1].promo = 0;
+                n++;
+                finishr = TRUE; //capture piece and mark direction as closed
+            }
+        }
+        else if (p->b[idxr] = '.' && finishr){
+            move[i-1].from = from;
+            move[i-1].to = idxr;
+            move[i-1].promo = 0;
+            n++;
+        }
+        if (p->b[idxu] != '.' && !finishu){
+            if(IsWhitePiece(p->b[idxu]))
+                idxl = -1; //can't move this direction
+            else{
+                move[i-1].from = from;
+                move[i-1].to = idxu;
+                move[i-1].promo = 0;
+                finishr = TRUE; //capture piece and mark direction as closed
+                n++;
+            }
+        }
+        else if (p->b[idxu] = '.' && finishu){
+            move[i-1].from = from;
+            move[i-1].to = idxu;
+            move[i-1].promo = 0;
+            n++;
+        }
+    if (p->b[idxd] != '.' && !finishd){
+            if(IsWhitePiece(p->b[idxd]))
+                idxl = -1; //can't move this direction
+            else{
+                move[i-1].from = from;
+                move[i-1].to = idxd;
+                move[i-1].promo = 0;
+                finishd = TRUE; //capture piece and mark direction as closed
+                n++;
+            }
+    }
+        else if (p->b[idxd] = '.' && finishd){
+            move[i-1].from = from;
+            move[i-1].to = idxd;
+            move[i-1].promo = 0;
+            n++;
+        }
+        }
+    }
+    }
+    else
+    {   
+        return from; // pass back the index - change later?
+    }
 }
