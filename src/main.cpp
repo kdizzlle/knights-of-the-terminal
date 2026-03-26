@@ -137,56 +137,6 @@ static void genKnight(const Pos* p, int from, bool white, Move* moves, int* n) {
     }
 }
 
-//mia version
-static int pseudoLegalMoves(const Position *p, Move *moves)
-{
-    int n = 0;
-    const bool usWhite = p->white_to_move;
-
-    for (int i = 0; i < 64; i++)
-    {
-        const char pc = p->b[i];
-        if (pc == '.')
-            continue;
-
-        bool white = isWhitePiece(pc);
-        if (white != usWhite)
-            continue;
-
-        const char up = static_cast<char>(std::toupper(static_cast<unsigned char>(pc)));
-
-        switch (up)
-        {
-        case 'P':
-            genPawn(p, i, white, moves, &n);
-            break;
-        case 'N':
-            genKnite(p, i, white, moves, &n);
-            break;
-        case 'B':
-            static const int d = {{1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
-            genBishop(p, i, white, moves, &n);
-            break;
-        case 'R':
-            genRook(p, i, white, moves, &n);
-            break;
-        case 'Q':
-            static const int d = {{1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
-            genQueen(p, i, white, moves, &n);
-            break;
-        case 'K':
-            static const int d[8][2] = {{1, 1}, {1, -1}, {-1, 1}, {-1, -1}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}};
-            genKing(p, i, white, moves, &n);
-            break;
-        default:
-            // TODO: handle exception
-            break;
-        }
-        return n;
-    }
-}
-
-//from main
 static int pseudoLegalMoves(const Pos* p, Move* moves) {
     int n = 0;
     const bool usWhite = p->white_to_move;
