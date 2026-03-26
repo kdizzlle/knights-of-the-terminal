@@ -318,12 +318,15 @@ static void genQueen(const Position *p, int from, bool white, Move *moves, int *
 }
 
 static void genKing(const Position *p, int from, bool white, Move *moves, int *n)
-{
+{// kelly
+    // All 8 directions the king can move: diagonals + cardinal directions
+    // Each entry is {file delta, rank delta}
     static const int dirs[8][2] = {
         { 1,  1}, { 1, -1}, {-1,  1}, {-1, -1},
         { 1,  0}, {-1,  0}, { 0,  1}, { 0, -1}
     };
 
+    // Convert the king's square index to row/col for bounds checking
     int fromRow = from / 8;
     int fromCol = from % 8;
 
@@ -331,13 +334,16 @@ static void genKing(const Position *p, int from, bool white, Move *moves, int *n
         int toRow = fromRow + dirs[i][1];
         int toCol = fromCol + dirs[i][0];
 
+        // Skip squares that fall off the board
         if (toRow < 0 || toRow > 7 || toCol < 0 || toCol > 7) continue;
 
         int to = toRow * 8 + toCol;
         char target = p->b[to];
 
+        // Skip squares occupied by a friendly piece
         if (target != '.' && isWhitePiece(target) == white) continue;
 
+        // Square is empty or holds an enemy piece — add the move
         moves[*n] = Move(from, to);
         (*n)++;
     }
