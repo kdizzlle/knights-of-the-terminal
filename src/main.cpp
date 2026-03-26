@@ -138,48 +138,6 @@ static void genKnight(const Pos* p, int from, bool white, Move* moves, int* n) {
     }
 }
 
-
-
-static int pseudoLegalMoves(const Pos* p, Move* moves) {
-    int n = 0;
-    const bool usWhite = p->white_to_move;
-
-    for (int i = 0; i < 64; i++) {
-        const char pc = p->b[i];
-        if (pc == '.') continue;
-
-        const bool white = isWhitePiece(pc);
-        if (white != usWhite) continue;
-
-        const char up = static_cast<char>(std::toupper(static_cast<unsigned char>(pc)));
-
-        if (up == 'P') {
-            genPawn(p, i, white, moves, &n);
-        }
-        else if (up == 'N') {
-            genKnight(p, i, white, moves, &n);
-        }
-        else if (up == 'B') {
-            static const int d[4][2] = { {1, 1}, {1, -1}, {-1, 1}, {-1, -1} };
-            genBishop(p, i, white, d, 4, moves, &n);
-        }
-        else if (up == 'R') {
-            static const int d[4][2] = { {1, 0}, {-1, 0}, {0, 1}, {0, -1} };
-            genRook(p, i, white, d, 4, moves, &n);
-        }
-        else if (up == 'Q') {
-            static const int d[8][2] = { {1,1},{1,-1},{-1,1},{-1,-1},
-                                         {1,0},{-1,0},{0,1},{0,-1} };
-            genQueen(p, i, white, d, 8, moves, &n);
-        }
-        else if (up == 'K') {
-            genKing(p, i, white, moves, &n);
-        }
-    }
-
-    return n;
-}
-
 static void genQueen(const Position *p, int from, bool white, Move *moves, int *n)
 {
     static const int dirs[8][2] = {
@@ -223,6 +181,96 @@ static void genQueen(const Position *p, int from, bool white, Move *moves, int *
             cf += df;
         }
     }
+}
+
+static void genKing(const Position *p, int from, bool white, Move *moves, int *n)
+{
+    static const int dirs[8][2] = {
+        { 1,  1}, { 1, -1}, {-1,  1}, {-1, -1},
+        { 1,  0}, {-1,  0}, { 0,  1}, { 0, -1}
+    };
+
+    int r = from / 8;
+    int f = from % 8;
+
+    for (int di = 0; di < 8; di++)
+    {
+        int df = dirs[di][0];
+        int dr = dirs[di][1];
+
+        int cr = r + dr;
+        int cf = f + df;
+
+        while (cr >= 0 && cr < 8 && cf >= 0 && cf < 8)
+        {
+            int to = cr * 8 + cf;
+            char target = p->b[to];
+
+            if (target == '.')
+            {
+                moves[*n] = Move(from, to);
+                (*n)++;
+            }
+            else
+            {
+                bool targetWhite = isWhitePiece(target);
+                if (targetWhite != white)
+                {
+                    moves[*n] = Move(from, to);
+                    (*n)++;
+                }
+                break;
+            }
+
+            cr += dr;
+            cf += df;
+        }
+    }
+}
+
+/*============================
+NEW PIECE FUNCTIONS GO HERE
+They MUST be before pseudoLegalMoves
+==============================*/
+
+static int pseudoLegalMoves(const Pos* p, Move* moves) {
+    int n = 0;
+    const bool usWhite = p->white_to_move;
+
+    for (int i = 0; i < 64; i++) {
+        const char pc = p->b[i];
+        if (pc == '.') continue;
+
+        const bool white = isWhitePiece(pc);
+        if (white != usWhite) continue;
+
+        const char up = static_cast<char>(std::toupper(static_cast<unsigned char>(pc)));
+
+        if (up == 'P') {
+            genPawn(p, i, white, moves, &n);
+        }
+        else if (up == 'N') {
+            genKnight(p, i, white, moves, &n);
+        }
+        else if (up == 'B') {
+            static const int d[4][2] = { {1, 1}, {1, -1}, {-1, 1}, {-1, -1} };
+            genBishop(p, i, white, d, 4, moves, &n);
+        }
+        else if (up == 'R') {
+            static const int d[4][2] = { {1, 0}, {-1, 0}, {0, 1}, {0, -1} };
+            genRook(p, i, white, d, 4, moves, &n);
+        }
+        else if (up == 'Q') {
+            static const int d[8][2] = { {1,1},{1,-1},{-1,1},{-1,-1},
+                                         {1,0},{-1,0},{0,1},{0,-1} };
+            genQueen(p, i, white, d, 8, moves, &n);
+        }
+        else if (up == 'K') {
+            genKing(p, i, white, moves, &n);
+        }
+    }
+
+    return n;
 }
 
 static bool is_square_attacked(const Position *p, int sq, bool by_white) {
