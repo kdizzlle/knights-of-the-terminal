@@ -1,6 +1,8 @@
 #ifndef POSITION_H
 #define POSITION_H
 
+#include <cctype>
+
 struct Position
 {
     bool white_to_move;

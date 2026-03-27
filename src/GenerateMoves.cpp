@@ -1,256 +1,305 @@
 #include "GenerateMoves.h"
 
-void *GenerateMoves::genRook(const Position *pos, int from, bool white, Move *moves, int *n, bool castleflag)
-{
-    const int d[4][2] = {{1, 0},
-                         {-1, 0},
-                         {0, 1},
-                         {0, -1}};
-    bool finish;
-    bool finishl, finishr, finishu, finishd;
-    Move move[28];
+// ---------- Helpers ----------
 
-    if (!castleflag)
+bool GenerateMoves::isWhitePiece(char p)
+{
+    return p >= 'A' && p <= 'Z';
+}
+
+bool GenerateMoves::isBlackPiece(char p)
+{
+    return p >= 'a' && p <= 'z';
+}
+
+bool GenerateMoves::isEmpty(char p)
+{
+    return p == '.' || p == 0;
+}
+
+Move *GenerateMoves::addMove(Move *out, int from, int to, char promo)
+{
+    *out++ = Move(from, to, promo);
+    return out;
+}
+
+Move *GenerateMoves::addPromotionMoves(Move *out, int from, int to)
+{
+    *out++ = Move(from, to, 'q');
+    *out++ = Move(from, to, 'r');
+    *out++ = Move(from, to, 'b');
+    *out++ = Move(from, to, 'n');
+    return out;
+}
+
+// ---------- Pawn ----------
+
+Move *GenerateMoves::genPawn(const Position &pos, Move *out)
+{
+    const bool white = pos.white_to_move;
+
+    for (int from = 0; from < 64; ++from)
     {
-        while (!finish)
+        const char piece = pos.b[from];
+
+        if (white)
         {
-            for (int i = 1; i <= 7; i++)
+            if (piece != 'P')
+                continue;
+
+            const int file = from & 7;
+            const int rank = from >> 3;
+
+            const int oneStep = from + 8;
+            const int twoStep = from + 16;
+
+            // single push
+            if (rank < 7 && isEmpty(pos.b[oneStep]))
             {
-                int idxl = from + (i * d[0]);
-                int idxr = from + (i * d[2]);
-                int idxu = from + (i * d[6]);
-                int idxd = from + (i * d[8]);
-                if (pos->b[idxl] != '.' && !finishl)
+                if (rank == 6)
+                    out = addPromotionMoves(out, from, oneStep);
+                else
                 {
-                    if (IsWhitePiece(pos->b[idxl]))
-                        idxl = -1; // can't move this direction
+                    out = addMove(out, from, oneStep);
+
+                    // double push from rank 2
+                    if (rank == 1 && isEmpty(pos.b[twoStep]))
+                        out = addMove(out, from, twoStep);
+                }
+            }
+
+            // capture left
+            if (file > 0 && rank < 7)
+            {
+                const int to = from + 7;
+                if (isBlackPiece(pos.b[to]))
+                {
+                    if (rank == 6)
+                        out = addPromotionMoves(out, from, to);
                     else
-                    {
-                        move[i - 1].from = from;
-                        move[i - 1].to = idxl;
-                        move[i - 1].promo = 0;
-                        n++;
-                        finishl = true; // capture piece and mark direction as closed
-                    }
+                        out = addMove(out, from, to);
                 }
-                else if (pos->b[idxl] == '.' && !finishl)
+            }
+
+            // capture right
+            if (file < 7 && rank < 7)
+            {
+                const int to = from + 9;
+                if (isBlackPiece(pos.b[to]))
                 {
-                    move[i - 1].from = from;
-                    move[i - 1].to = idxl;
-                    move[i - 1].promo = 0;
-                    n++;
-                }
-                if (pos->b[idxr] != '.' && !finishr)
-                {
-                    if (IsWhitePiece(pos->b[idxr]))
-                        idxl = -1; // can't move this direction
+                    if (rank == 6)
+                        out = addPromotionMoves(out, from, to);
                     else
-                    {
-                        move[i - 1].from = from;
-                        move[i - 1].to = idxr;
-                        move[i - 1].promo = 0;
-                        n++;
-                        finishr = true; // capture piece and mark direction as closed
-                    }
+                        out = addMove(out, from, to);
                 }
-                else if (pos->b[idxr] == '.' && finishr)
+            }
+        }
+        else
+        {
+            if (piece != 'p')
+                continue;
+
+            const int file = from & 7;
+            const int rank = from >> 3;
+
+            const int oneStep = from - 8;
+            const int twoStep = from - 16;
+
+            // single push
+            if (rank > 0 && isEmpty(pos.b[oneStep]))
+            {
+                if (rank == 1)
+                    out = addPromotionMoves(out, from, oneStep);
+                else
                 {
-                    move[i - 1].from = from;
-                    move[i - 1].to = idxr;
-                    move[i - 1].promo = 0;
-                    n++;
+                    out = addMove(out, from, oneStep);
+
+                    // double push from rank 7
+                    if (rank == 6 && isEmpty(pos.b[twoStep]))
+                        out = addMove(out, from, twoStep);
                 }
-                if (pos->b[idxu] != '.' && !finishu)
+            }
+
+            // capture left from black perspective
+            if (file > 0 && rank > 0)
+            {
+                const int to = from - 9;
+                if (isWhitePiece(pos.b[to]))
                 {
-                    if (IsWhitePiece(pos->b[idxu]))
-                        idxl = -1; // can't move this direction
+                    if (rank == 1)
+                        out = addPromotionMoves(out, from, to);
                     else
-                    {
-                        move[i - 1].from = from;
-                        move[i - 1].to = idxu;
-                        move[i - 1].promo = 0;
-                        finishr = true; // capture piece and mark direction as closed
-                        n++;
-                    }
+                        out = addMove(out, from, to);
                 }
-                else if (pos->b[idxu] == '.' && finishu)
+            }
+
+            // capture right from black perspective
+            if (file < 7 && rank > 0)
+            {
+                const int to = from - 7;
+                if (isWhitePiece(pos.b[to]))
                 {
-                    move[i - 1].from = from;
-                    move[i - 1].to = idxu;
-                    move[i - 1].promo = 0;
-                    n++;
-                }
-                if (pos->b[idxd] != '.' && !finishd)
-                {
-                    if (IsWhitePiece(pos->b[idxd]))
-                        idxl = -1; // can't move this direction
+                    if (rank == 1)
+                        out = addPromotionMoves(out, from, to);
                     else
-                    {
-                        move[i - 1].from = from;
-                        move[i - 1].to = idxd;
-                        move[i - 1].promo = 0;
-                        finishd = true; // capture piece and mark direction as closed
-                        n++;
-                    }
-                }
-                else if (pos->b[idxd] == '.' && finishd)
-                {
-                    move[i - 1].from = from;
-                    move[i - 1].to = idxd;
-                    move[i - 1].promo = 0;
-                    n++;
+                        out = addMove(out, from, to);
                 }
             }
         }
     }
-    else
-    {
-        return from; // pass back the index - change later?
-    }
+
+    return out;
 }
 
-void *GenerateMoves::genKnight(const Position *pos, int from, bool white, Move *moves, int *n)
+Move *GenerateMoves::genKnight(const Position &pos, Move *out)
 {
     static const int offsets[8][2] = {
         {-2, -1}, {-2, 1}, {-1, -2}, {-1, 2}, {1, -2}, {1, 2}, {2, -1}, {2, 1}};
 
-    int fromRow = from / 8;
-    int fromCol = from % 8;
+    const bool white = pos.white_to_move;
+    const char knight = white ? 'N' : 'n';
 
-    for (int i = 0; i < 8; i++)
+    for (int from = 0; from < 64; ++from)
     {
-        int toRow = fromRow + offsets[i][0];
-        int toCol = fromCol + offsets[i][1];
-
-        if (toRow < 0 || toRow > 7 || toCol < 0 || toCol > 7)
+        if (pos.b[from] != knight)
             continue;
 
-        int to = toRow * 8 + toCol;
-        char target = pos->b[to];
+        const int row = from >> 3;
+        const int col = from & 7;
 
-        if (target != '.' && isWhitePiece(target) == white)
-            continue;
+        for (int i = 0; i < 8; ++i)
+        {
+            const int toRow = row + offsets[i][0];
+            const int toCol = col + offsets[i][1];
 
-        addMove(moves, n, from, to, 0);
+            if (toRow < 0 || toRow > 7 || toCol < 0 || toCol > 7)
+                continue;
+
+            const int to = toRow * 8 + toCol;
+            const char target = pos.b[to];
+
+            if (!isEmpty(target) && isWhitePiece(target) == white)
+                continue;
+
+            out = addMove(out, from, to);
+        }
     }
+
+    return out;
 }
 
-void *GenerateMoves::genQueen(const Position *pos, int from, bool white, Move *moves, int *n)
+// ---------- Sliding helper ----------
+
+Move *GenerateMoves::genSliding(const Position &pos, Move *out, char piece, const int dirs[][2], int dirCount)
+{
+    const bool white = pos.white_to_move;
+
+    for (int from = 0; from < 64; ++from)
+    {
+        if (pos.b[from] != piece)
+            continue;
+
+        const int row = from >> 3;
+        const int col = from & 7;
+
+        for (int d = 0; d < dirCount; ++d)
+        {
+            int r = row + dirs[d][1];
+            int c = col + dirs[d][0];
+
+            while (r >= 0 && r < 8 && c >= 0 && c < 8)
+            {
+                const int to = r * 8 + c;
+                const char target = pos.b[to];
+
+                if (isEmpty(target))
+                {
+                    out = addMove(out, from, to);
+                }
+                else
+                {
+                    if (isWhitePiece(target) != white)
+                        out = addMove(out, from, to);
+                    break;
+                }
+
+                r += dirs[d][1];
+                c += dirs[d][0];
+            }
+        }
+    }
+
+    return out;
+}
+
+Move *GenerateMoves::genBishop(const Position &pos, Move *out)
+{
+    static const int dirs[4][2] = {
+        {1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
+
+    return genSliding(pos, out, pos.white_to_move ? 'B' : 'b', dirs, 4);
+}
+
+Move *GenerateMoves::genRook(const Position &pos, Move *out)
+{
+    static const int dirs[4][2] = {
+        {1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+
+    return genSliding(pos, out, pos.white_to_move ? 'R' : 'r', dirs, 4);
+}
+
+Move *GenerateMoves::genQueen(const Position &pos, Move *out)
 {
     static const int dirs[8][2] = {
         {1, 1}, {1, -1}, {-1, 1}, {-1, -1}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}};
 
-    int r = from / 8;
-    int f = from % 8;
-
-    for (int di = 0; di < 8; di++)
-    {
-        int df = dirs[di][0];
-        int dr = dirs[di][1];
-
-        int cr = r + dr;
-        int cf = f + df;
-
-        while (cr >= 0 && cr < 8 && cf >= 0 && cf < 8)
-        {
-            int to = cr * 8 + cf;
-            char target = pos->b[to];
-
-            if (target == '.')
-            {
-                moves[*n] = Move(from, to);
-                (*n)++;
-            }
-            else
-            {
-                bool targetWhite = isWhitePiece(target);
-                if (targetWhite != white)
-                {
-                    moves[*n] = Move(from, to);
-                    (*n)++;
-                }
-                break;
-            }
-
-            cr += dr;
-            cf += df;
-        }
-    }
+    return genSliding(pos, out, pos.white_to_move ? 'Q' : 'q', dirs, 8);
 }
 
-void *GenerateMoves::genKing(const Position *pos, int from, bool white, Move *moves, int *n)
-{ // kelly
-    // All 8 directions the king can move: diagonals + cardinal directions
-    // Each entry is {file delta, rank delta}
+Move *GenerateMoves::genKing(const Position &pos, Move *out)
+{
     static const int dirs[8][2] = {
         {1, 1}, {1, -1}, {-1, 1}, {-1, -1}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}};
 
-    // Convert the king's square index to row/col for bounds checking
-    int fromRow = from / 8;
-    int fromCol = from % 8;
+    const bool white = pos.white_to_move;
+    const char king = white ? 'K' : 'k';
 
-    for (int i = 0; i < 8; i++)
+    for (int from = 0; from < 64; ++from)
     {
-        int toRow = fromRow + dirs[i][1];
-        int toCol = fromCol + dirs[i][0];
-
-        // Skip squares that fall off the board
-        if (toRow < 0 || toRow > 7 || toCol < 0 || toCol > 7)
+        if (pos.b[from] != king)
             continue;
 
-        int to = toRow * 8 + toCol;
-        char target = pos->b[to];
+        const int row = from >> 3;
+        const int col = from & 7;
 
-        // Skip squares occupied by a friendly piece
-        if (target != '.' && isWhitePiece(target) == white)
-            continue;
-
-        // Square is empty or holds an enemy piece — add the move
-        moves[*n] = Move(from, to);
-        (*n)++;
-    }
-}
-
-void *GenerateMoves::genBishop(const Position *pos, int from, bool white, const int dirs[][2], int dcount, Move *moves, int *n)
-{
-    int r = from / 8;
-    int f = from % 8;
-
-    for (int di = 0; di < dcount; di++)
-    {
-        int df = dirs[di][0];
-        int dr = dirs[di][1];
-
-        int cr = r + dr;
-        int cf = f + df;
-
-        // Slide diagonally until blocked
-        while (cr >= 0 && cr < 8 && cf >= 0 && cf < 8)
+        for (int i = 0; i < 8; ++i)
         {
-            int to = cr * 8 + cf;
-            char target = pos->b[to];
+            const int toRow = row + dirs[i][1];
+            const int toCol = col + dirs[i][0];
 
-            if (target == '.')
-            {
-                // Empty square
-                moves[*n] = Move(from, to);
-                (*n)++;
-            }
-            else
-            {
-                // Occupied square
-                bool targetWhite = isWhitePiece(target);
-                if (targetWhite != white)
-                {
-                    // Capture
-                    moves[*n] = Move(from, to);
-                    (*n)++;
-                }
-                // Stop sliding after any piece
-                break;
-            }
-            cr += dr;
-            cf += df;
+            if (toRow < 0 || toRow > 7 || toCol < 0 || toCol > 7)
+                continue;
+
+            const int to = toRow * 8 + toCol;
+            const char target = pos.b[to];
+
+            if (!isEmpty(target) && isWhitePiece(target) == white)
+                continue;
+
+            out = addMove(out, from, to);
         }
     }
+
+    return out;
+}
+
+Move *GenerateMoves::genAllMoves(const Position &pos, Move *out)
+{
+    out = genPawn(pos, out);
+    out = genKnight(pos, out);
+    out = genBishop(pos, out);
+    out = genRook(pos, out);
+    out = genQueen(pos, out);
+    out = genKing(pos, out);
+    return out;
 }

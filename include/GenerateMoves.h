@@ -7,12 +7,22 @@
 class GenerateMoves
 {
 public:
-    // Gen Moves
-    static void *GenerateMoves::genRook(const Position *pos, int from, bool white, Move *moves, int *n, bool castleflag);
-    static void *GenerateMoves::genKnight(const Position *pos, int from, bool white, Move *moves, int *n);
-    static void *GenerateMoves::genQueen(const Position *pos, int from, bool white, Move *moves, int *n);
-    static void *GenerateMoves::genKing(const Position *pos, int from, bool white, Move *moves, int *n);
-    static void *GenerateMoves::genBishop(const Position *pos, int from, bool white, const int dirs[][2], int dcount, Move *moves, int *n);
+    static Move *genPawn(const Position &pos, Move *out);
+    static Move *genKnight(const Position &pos, Move *out);
+    static Move *genBishop(const Position &pos, Move *out);
+    static Move *genRook(const Position &pos, Move *out);
+    static Move *genQueen(const Position &pos, Move *out);
+    static Move *genKing(const Position &pos, Move *out);
+    static Move *genAllMoves(const Position &pos, Move *out);
+
+private:
+    static bool isWhitePiece(char p);
+    static bool isBlackPiece(char p);
+    static bool isEmpty(char p);
+
+    static Move *addMove(Move *out, int from, int to, char promo = 0);
+    static Move *addPromotionMoves(Move *out, int from, int to);
+    static Move *genSliding(const Position &pos, Move *out, char piece, const int dirs[][2], int dirCount);
 };
 
 #endif
