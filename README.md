@@ -1,28 +1,30 @@
 # knights-of-the-terminal
 
-### Overview
+## Overview
 
 This project is a chess engine developed by a team of 6 members. The engine analyzes a given chess position, generates all possible legal moves using Algebraic Notation, evaluates each move, and returns the best move for the current board state.
 
-### Features
+## Features
+
 - Full chess board representation
 - Move generation for all pieces
 - Basic evaluation function for board positions
 - Input/Output using Algebraic Notation
 - Best move selection based on evaluation
 
+## Build Instructions
 
-### Build Instructions
-
-**Prerequisites**
+## Prerequisites
 
 C Make (version 3.10 or higher)
+
 - A C++ compiler:
 - Linux: g++
 - macOS: clang++ or Xcode Command Line Tools
-- Windows: MinGW g++ or Visual Studio
+- Windows: Visual Studio
 
-### Linux
+## Linux
+
 ```bash
 # Install dependencies (Ubuntu/Debian example)
 sudo apt update
@@ -40,7 +42,8 @@ cmake --build build
 ./build/chess_engine
 ```
 
-### MacOS
+## MacOS
+
 ```bash
 # Install dependencies (if not already installed)
 brew install cmake
@@ -57,7 +60,8 @@ cmake --build build
 ./build/chess_engine
 ```
 
-### Windows (Visual Studio)
+## Windows (Visual Studio)
+
 ```bash
 # Clone the repository
 git clone https://github.com/your-repo/chess-engine.git
@@ -72,14 +76,16 @@ cmake -S . -B build
 # Build and run inside Visual Studio
 ```
 
-### Example: UCI Handshake
+## Example: UCI Handshake
 
 **Input:**
+
 ```bash
 uci
 ```
 
 **Output**
+
 ```text
 Knights of the Terminal
 Sebastian, Kelly, Mia, Andrew, Tran, Ella
