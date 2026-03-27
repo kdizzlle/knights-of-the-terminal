@@ -3,15 +3,67 @@
 
 #include <cstring>
 
+/**
+ * @struct Move
+ * @brief Represents a chess move using source square, destination square,
+ *        and optional promotion piece.
+ *
+ * Squares are stored as 0-63 board indices, where:
+ * - 0 = a1
+ * - 7 = h1
+ * - 56 = a8
+ * - 63 = h8
+ *
+ * The promo field is 0 for a normal move, or one of:
+ * - 'q' for queen promotion
+ * - 'r' for rook promotion
+ * - 'b' for bishop promotion
+ * - 'n' for knight promotion
+ */
 struct Move
 {
+    /** @brief Source square index (0-63). */
     int from;
-    int to;
-    char promo; // 0 = none, else 'q'/'r'/'b'/'n'
 
+    /** @brief Destination square index (0-63). */
+    int to;
+
+    /**
+     * @brief Promotion piece character.
+     *
+     * Value is 0 if the move is not a promotion. Otherwise it should be one
+     * of 'q', 'r', 'b', or 'n'.
+     */
+    char promo;
+
+    /**
+     * @brief Constructs a default move.
+     *
+     * Initializes the move to from=0, to=0, promo=0.
+     */
     Move() : from(0), to(0), promo(0) {}
+
+    /**
+     * @brief Constructs a move with source, destination, and optional promotion.
+     *
+     * @param f Source square index.
+     * @param t Destination square index.
+     * @param p Promotion piece character, or 0 if not a promotion.
+     */
     Move(int f, int t, char p = 0) : from(f), to(t), promo(p) {}
 
+    /**
+     * @brief Converts an algebraic square string to a board index.
+     *
+     * Example conversions:
+     * - "a1" -> 0
+     * - "h1" -> 7
+     * - "a8" -> 56
+     * - "h8" -> 63
+     *
+     * @param sq Null-terminated 2-character square string such as "e2".
+     * @return Board index in the range 0-63.
+     */
     static int squareIndex(const char *sq)
     {
         int file = sq[0] - 'a';
@@ -19,6 +71,20 @@ struct Move
         return rank * 8 + file;
     }
 
+    /**
+     * @brief Parses a move from a UCI string.
+     *
+     * Accepted examples:
+     * - "e2e4"
+     * - "e7e8q"
+     * - "a7a8n"
+     *
+     * If the input is null or shorter than 4 characters, a default move
+     * of (0, 0, 0) is returned.
+     *
+     * @param s Null-terminated UCI move string.
+     * @return Parsed Move object.
+     */
     static Move fromUci(const char *s)
     {
         if (!s || std::strlen(s) < 4)
@@ -32,6 +98,18 @@ struct Move
         return Move(from, to, promo);
     }
 
+    /**
+     * @brief Converts a board index to a square string.
+     *
+     * Example conversions:
+     * - 0  -> "a1"
+     * - 7  -> "h1"
+     * - 56 -> "a8"
+     * - 63 -> "h8"
+     *
+     * @param idx Board index in the range 0-63.
+     * @param out Output buffer of size at least 3.
+     */
     static void indexToSq(int idx, char out[3])
     {
         out[0] = 'a' + (idx % 8);
@@ -39,6 +117,18 @@ struct Move
         out[2] = '\0';
     }
 
+    /**
+     * @brief Converts this move to a UCI string.
+     *
+     * Examples:
+     * - normal move: "e2e4"
+     * - promotion:   "e7e8q"
+     *
+     * The output buffer must have room for at least 6 characters:
+     * 4 for the move, 1 optional promotion piece, and the null terminator.
+     *
+     * @param out Output buffer of size at least 6.
+     */
     void toUci(char out[6]) const
     {
         char f[3], t[3];
