@@ -1,5 +1,4 @@
 #include <cctype>
-#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <vector>
@@ -8,243 +7,271 @@
 #include "Move.h"
 #include "Position.h"
 
-struct Move;
-struct Position;
-
-int pseudoLegalMoves();
-Position makeMove(const Move &m);
-std::vector<Move> legalMoves();
-
 using namespace std;
-// need to make a unified isWhitePiece function and also unify how we call this
-// right now I see isWhitePiece and is_white_piece. this looks like a placeholder for a future implementation.
 
-Move moves[] = {};
-
-//---------------------------------------------------------------
-
-vector<Move> legalMoves()
+/**
+ * @brief Returns true if the given piece character is a white piece.
+ * @param p Piece character from the board.
+ * @return True if uppercase, otherwise false.
+ */
+static bool isWhitePiece(char p)
 {
-    vector<Move> out;
-
-    for (int i = 0; i < pseudoLegalMoves(); i++)
-    {
-        Position np = makeMove(moves[i]);
-        if (!np.inCheck(!np.white_to_move))
-        {
-            out.push_back(moves[i]);
-        }
-    }
-
-    return out;
+    return p >= 'A' && p <= 'Z';
 }
 
-/*============================
-NEW PIECE FUNCTIONS GO HERE
-They MUST be before pseudoLegalMoves
-==============================*/
-
+/**
+ * @brief Applies a move to a position and returns the resulting position.
+ *
+ * This performs a simple board update:
+ * - moves the piece
+ * - handles promotion
+ * - flips the side to move
+ *
+ * @param pos Original position.
+ * @param m Move to apply.
+ * @return New position after the move is made.
+ */
 Position makeMove(const Position &pos, const Move &m)
 {
-    Position np;
+    Position np = pos;
 
-    // copy the board
-    memcpy(np.b, pos.b, 64);
-
-    // grab the piece that is moving
+    // Grab moving piece
     char piece = np.b[m.from];
 
-    // vacate the source square
+    // Vacate source square
     np.b[m.from] = '.';
 
-    // determine what actually lands on the target square
+    // Determine placed piece
     char placed = piece;
 
-    // promo: move.promo is non-zero and the moving piece is a pawn
-    // white pawn = P       black pawn = pos
-    if (m.promo != 0 && (piece == 'P' || piece == 'pos'))
+    if (m.promo != 0 && (piece == 'P' || piece == 'p'))
     {
         if (piece == 'P')
-        {
-            placed = (char)toupper((unsigned char)m.promo);
-        }
+            placed = static_cast<char>(toupper(static_cast<unsigned char>(m.promo)));
         else
-        {
-            placed = (char)tolower((unsigned char)m.promo);
-        }
+            placed = static_cast<char>(tolower(static_cast<unsigned char>(m.promo)));
     }
 
-    // place the piece on the target square
+    // Place on target square
     np.b[m.to] = placed;
 
-    // flip the turnn
-    np.white_to_move = false;
+    // Flip side to move
+    np.white_to_move = !pos.white_to_move;
 
     return np;
 }
 
-static int pseudoLegalMoves(const Position *pos, Move *moves)
+/**
+ * @brief Finds the square index of the king for the specified side.
+ * @param pos Position to inspect.
+ * @param white True for white king, false for black king.
+ * @return Board index of the king, or -1 if not found.
+ */
+static int findKing(const Position &pos, bool white)
 {
-    int n = 0;
-    const bool usWhite = pos->white_to_move;
-
-    for (int i = 0; i < 64; i++)
+    const char king = white ? 'K' : 'k';
+    for (int i = 0; i < 64; ++i)
     {
-        const char pc = pos->b[i];
-        if (pc == '.')
-            continue;
-
-        const bool white = isWhitePiece(pc);
-        if (white != usWhite)
-            continue;
-
-        const char up = static_cast<char>(std::toupper(static_cast<unsigned char>(pc)));
-
-        if (up == 'P')
-        {
-            GenerateMoves::genPawn(pos, i, white, moves, &n);
-        }
-        else if (up == 'N')
-        {
-            GenerateMoves::genKnight(pos, i, white, moves, &n);
-        }
-        else if (up == 'B')
-        {
-            static const int d[4][2] = {{1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
-            GenerateMoves::genBishop(pos, i, white, d, 4, moves, &n);
-        }
-        else if (up == 'R')
-        {
-            static const int d[4][2] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
-            GenerateMoves::genRook(pos, i, white, d, 4, moves, &n);
-        }
-        else if (up == 'Q')
-        {
-            static const int d[8][2] = {{1, 1}, {1, -1}, {-1, 1}, {-1, -1}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}};
-            GenerateMoves::genQueen(pos, i, white, d, 8, moves, &n);
-        }
-        else if (up == 'K')
-        {
-            GenerateMoves::genKing(pos, i, white, moves, &n);
-        }
+        if (pos.b[i] == king)
+            return i;
     }
-
-    return n;
+    return -1;
 }
 
-static bool is_square_attacked(const Position *pos, int sq, bool by_white)
+/**
+ * @brief Returns true if a square is attacked by the specified side.
+ * @param pos Position to inspect.
+ * @param sq Target square index.
+ * @param by_white True if checking attacks by white, false for black.
+ * @return True if the square is attacked, otherwise false.
+ */
+static bool is_square_attacked(const Position &pos, int sq, bool by_white)
 {
-    int r = sq / 8, f = sq % 8;
+    const int r = sq / 8;
+    const int f = sq % 8;
 
-    // pawns
+    // Pawn attacks
     if (by_white)
     {
-        if (r > 0 && f > 0 && pos->b[(r - 1) * 8 + (f - 1)] == 'P')
+        if (r > 0 && f > 0 && pos.b[(r - 1) * 8 + (f - 1)] == 'P')
             return true;
-        if (r > 0 && f < 7 && pos->b[(r - 1) * 8 + (f + 1)] == 'P')
+        if (r > 0 && f < 7 && pos.b[(r - 1) * 8 + (f + 1)] == 'P')
             return true;
     }
     else
     {
-        if (r < 7 && f > 0 && pos->b[(r + 1) * 8 + (f - 1)] == 'pos')
+        if (r < 7 && f > 0 && pos.b[(r + 1) * 8 + (f - 1)] == 'p')
             return true;
-        if (r < 7 && f < 7 && pos->b[(r + 1) * 8 + (f + 1)] == 'pos')
+        if (r < 7 && f < 7 && pos.b[(r + 1) * 8 + (f + 1)] == 'p')
             return true;
     }
 
-    // knights
+    // Knight attacks
     static const int nd[8] = {-17, -15, -10, -6, 6, 10, 15, 17};
-    for (int i = 0; i < 8; i++)
+
+    for (int i = 0; i < 8; ++i)
     {
-        int to = sq + nd[i];
+        const int to = sq + nd[i];
         if (to < 0 || to >= 64)
             continue;
-        int tr = to / 8, tf = to % 8;
-        int dr = tr - r;
-        if (dr < 0)
-            dr = -dr;
-        int df = tf - f;
-        if (df < 0)
-            df = -df;
+
+        const int tr = to / 8;
+        const int tf = to % 8;
+        const int dr = abs(tr - r);
+        const int df = abs(tf - f);
+
         if (!((dr == 1 && df == 2) || (dr == 2 && df == 1)))
             continue;
-        char pc = pos->b[to];
+
+        const char pc = pos.b[to];
         if (by_white && pc == 'N')
             return true;
         if (!by_white && pc == 'n')
             return true;
     }
 
-    // sliders
+    // Sliding piece attacks + king one-square attacks
     static const int dirs[8][2] = {
         {1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
 
-    for (int di = 0; di < 8; di++)
+    for (int di = 0; di < 8; ++di)
     {
-        int df = dirs[di][0], dr = dirs[di][1];
-        int cr = r + dr, cf = f + df;
+        const int df = dirs[di][0];
+        const int dr = dirs[di][1];
+
+        int cr = r + dr;
+        int cf = f + df;
+        int distance = 1;
+
         while (cr >= 0 && cr < 8 && cf >= 0 && cf < 8)
         {
-            int idx = cr * 8 + cf;
-            char pc = pos->b[idx];
+            const int idx = cr * 8 + cf;
+            const char pc = pos.b[idx];
+
             if (pc != '.')
             {
-                int pc_white = is_white_piece(pc);
-                if (pc_white == by_white)
+                if (isWhitePiece(pc) == by_white)
                 {
-                    char up = static_cast<char>(std::toupper(static_cast<unsigned char>(pc)));
-                    int rook_dir = (di < 4);
-                    int bishop_dir = (di >= 4);
+                    const char up = static_cast<char>(toupper(static_cast<unsigned char>(pc)));
+                    const bool rook_dir = (di < 4);
+                    const bool bishop_dir = (di >= 4);
+
                     if (up == 'Q')
                         return true;
                     if (rook_dir && up == 'R')
                         return true;
                     if (bishop_dir && up == 'B')
                         return true;
-                    if (up == 'K' && (std::abs(cr - r) <= 1 && std::abs(cf - f) <= 1))
+                    if (distance == 1 && up == 'K')
                         return true;
                 }
                 break;
             }
+
             cr += dr;
             cf += df;
-        }
-    }
-
-    // king adjacency (extra safety)
-    for (int rr = r - 1; rr <= r + 1; rr++)
-    {
-        for (int ff = f - 1; ff <= f + 1; ff++)
-        {
-            if (rr < 0 || rr >= 8 || ff < 0 || ff >= 8)
-                continue;
-            if (rr == r && ff == f)
-                continue;
-            char pc = pos->b[rr * 8 + ff];
-            if (by_white && pc == 'K')
-                return true;
-            if (!by_white && pc == 'k')
-                return true;
+            ++distance;
         }
     }
 
     return false;
 }
 
-static void print_bestmove(Move m)
+/**
+ * @brief Checks whether the given side's king is in check.
+ * @param pos Position to inspect.
+ * @param white True for white, false for black.
+ * @return True if that side is in check, otherwise false.
+ */
+static bool inCheckComputed(const Position &pos, bool white)
 {
-    char a[3], b[3];
-    m.indexToSq(m.from, a);
-    m.indexToSq(m.to, b);
-    if (m.promo)
-        std::cout << "bestmove " << a << b << m.promo << std::endl;
-    else
-        std::cout << "bestmove " << a << b << std::endl;
+    const int kingSq = findKing(pos, white);
+    if (kingSq < 0)
+        return false; // fallback if king not found
+    return is_square_attacked(pos, kingSq, !white);
+}
+
+/**
+ * @brief Generates all pseudo-legal moves using GenerateMoves.cpp.
+ * @param pos Current board position.
+ * @return Vector containing all pseudo-legal moves.
+ */
+vector<Move> pseudoLegalMoves(const Position &pos)
+{
+    Move buffer[256];
+    Move *end = GenerateMoves::genAllMoves(pos, buffer);
+
+    vector<Move> out;
+    for (Move *m = buffer; m != end; ++m)
+        out.push_back(*m);
+
+    return out;
+}
+
+/**
+ * @brief Generates all legal moves by filtering pseudo-legal moves.
+ * @param pos Current board position.
+ * @return Vector containing legal moves only.
+ */
+vector<Move> legalMoves(const Position &pos)
+{
+    vector<Move> pseudo = pseudoLegalMoves(pos);
+    vector<Move> out;
+
+    for (const Move &m : pseudo)
+    {
+        Position np = makeMove(pos, m);
+
+        // After making a move, the side that just moved is !np.white_to_move
+        if (!inCheckComputed(np, !np.white_to_move))
+            out.push_back(m);
+    }
+
+    return out;
+}
+
+/**
+ * @brief Prints a move in UCI format using "bestmove" prefix.
+ * @param m Move to print.
+ */
+static void print_bestmove(const Move &m)
+{
+    char uci[6];
+    m.toUci(uci);
+    cout << "bestmove " << uci << endl;
 }
 
 int main()
 {
-    vector<Move> moves = legalMoves();
+    Position pos{};
+    pos.white_to_move = true;
+
+    // Initialize board to empty
+    for (int i = 0; i < 64; ++i)
+        pos.b[i] = '.';
+
+    // Example position:
+    // White: king e1, pawn e2
+    // Black: king e8, pawns d3 and f3
+    pos.b[Move::squareIndex("e1")] = 'K';
+    pos.b[Move::squareIndex("e2")] = 'P';
+    pos.b[Move::squareIndex("e8")] = 'k';
+    pos.b[Move::squareIndex("d3")] = 'p';
+    pos.b[Move::squareIndex("f3")] = 'p';
+
+    vector<Move> moves = legalMoves(pos);
+
     cout << "Number of legal moves: " << moves.size() << endl;
+
+    for (const Move &m : moves)
+    {
+        char uci[6];
+        m.toUci(uci);
+        cout << uci << endl;
+    }
+
+    if (!moves.empty())
+        print_bestmove(moves[0]);
+
     return 0;
 }
