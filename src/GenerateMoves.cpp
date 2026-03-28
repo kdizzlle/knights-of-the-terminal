@@ -1,7 +1,5 @@
 #include "GenerateMoves.h"
 
-// ---------- Helpers ----------
-
 bool GenerateMoves::isWhitePiece(char p)
 {
     return p >= 'A' && p <= 'Z';
@@ -32,8 +30,6 @@ Move *GenerateMoves::addPromotionMoves(Move *out, int from, int to)
     return out;
 }
 
-// ---------- Pawn ----------
-
 Move *GenerateMoves::genPawn(const Position &pos, Move *out)
 {
     const bool white = pos.white_to_move;
@@ -49,11 +45,9 @@ Move *GenerateMoves::genPawn(const Position &pos, Move *out)
 
             const int file = from & 7;
             const int rank = from >> 3;
-
             const int oneStep = from + 8;
             const int twoStep = from + 16;
 
-            // single push
             if (rank < 7 && isEmpty(pos.b[oneStep]))
             {
                 if (rank == 6)
@@ -62,13 +56,11 @@ Move *GenerateMoves::genPawn(const Position &pos, Move *out)
                 {
                     out = addMove(out, from, oneStep);
 
-                    // double push from rank 2
                     if (rank == 1 && isEmpty(pos.b[twoStep]))
                         out = addMove(out, from, twoStep);
                 }
             }
 
-            // capture left
             if (file > 0 && rank < 7)
             {
                 const int to = from + 7;
@@ -81,7 +73,6 @@ Move *GenerateMoves::genPawn(const Position &pos, Move *out)
                 }
             }
 
-            // capture right
             if (file < 7 && rank < 7)
             {
                 const int to = from + 9;
@@ -101,11 +92,9 @@ Move *GenerateMoves::genPawn(const Position &pos, Move *out)
 
             const int file = from & 7;
             const int rank = from >> 3;
-
             const int oneStep = from - 8;
             const int twoStep = from - 16;
 
-            // single push
             if (rank > 0 && isEmpty(pos.b[oneStep]))
             {
                 if (rank == 1)
@@ -114,13 +103,11 @@ Move *GenerateMoves::genPawn(const Position &pos, Move *out)
                 {
                     out = addMove(out, from, oneStep);
 
-                    // double push from rank 7
                     if (rank == 6 && isEmpty(pos.b[twoStep]))
                         out = addMove(out, from, twoStep);
                 }
             }
 
-            // capture left from black perspective
             if (file > 0 && rank > 0)
             {
                 const int to = from - 9;
@@ -133,7 +120,6 @@ Move *GenerateMoves::genPawn(const Position &pos, Move *out)
                 }
             }
 
-            // capture right from black perspective
             if (file < 7 && rank > 0)
             {
                 const int to = from - 7;
@@ -188,9 +174,8 @@ Move *GenerateMoves::genKnight(const Position &pos, Move *out)
     return out;
 }
 
-// ---------- Sliding helper ----------
-
-Move *GenerateMoves::genSliding(const Position &pos, Move *out, char piece, const int dirs[][2], int dirCount)
+Move *GenerateMoves::genSliding(const Position &pos, Move *out, char piece,
+                                const int dirs[][2], int dirCount)
 {
     const bool white = pos.white_to_move;
 

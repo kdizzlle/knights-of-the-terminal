@@ -38,8 +38,6 @@ struct Move
 
     /**
      * @brief Constructs a default move.
-     *
-     * Initializes the move to from=0, to=0, promo=0.
      */
     Move() : from(0), to(0), promo(0) {}
 
@@ -55,10 +53,9 @@ struct Move
     /**
      * @brief Converts an algebraic square string to a board index.
      *
-     * Example conversions:
+     * Example:
      * - "a1" -> 0
-     * - "h1" -> 7
-     * - "a8" -> 56
+     * - "e2" -> 12
      * - "h8" -> 63
      *
      * @param sq Null-terminated 2-character square string such as "e2".
@@ -79,11 +76,8 @@ struct Move
      * - "e7e8q"
      * - "a7a8n"
      *
-     * If the input is null or shorter than 4 characters, a default move
-     * of (0, 0, 0) is returned.
-     *
      * @param s Null-terminated UCI move string.
-     * @return Parsed Move object.
+     * @return Parsed Move object, or (0,0,0) if input is invalid.
      */
     static Move fromUci(const char *s)
     {
@@ -100,12 +94,6 @@ struct Move
 
     /**
      * @brief Converts a board index to a square string.
-     *
-     * Example conversions:
-     * - 0  -> "a1"
-     * - 7  -> "h1"
-     * - 56 -> "a8"
-     * - 63 -> "h8"
      *
      * @param idx Board index in the range 0-63.
      * @param out Output buffer of size at least 3.
@@ -124,9 +112,6 @@ struct Move
      * - normal move: "e2e4"
      * - promotion:   "e7e8q"
      *
-     * The output buffer must have room for at least 6 characters:
-     * 4 for the move, 1 optional promotion piece, and the null terminator.
-     *
      * @param out Output buffer of size at least 6.
      */
     void toUci(char out[6]) const
@@ -134,6 +119,7 @@ struct Move
         char f[3], t[3];
         indexToSq(from, f);
         indexToSq(to, t);
+
         out[0] = f[0];
         out[1] = f[1];
         out[2] = t[0];
