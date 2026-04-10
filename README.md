@@ -35,11 +35,10 @@ git clone https://github.com/your-repo/chess-engine.git
 cd chess-engine
 
 # Build
-cmake -S . -B build
-cmake --build build
+./build.sh
 
 # Run
-./build/chess_engine
+./run.sh
 ```
 
 ## MacOS
@@ -53,11 +52,10 @@ git clone https://github.com/your-repo/chess-engine.git
 cd chess-engine
 
 # Build
-cmake -S . -B build
-cmake --build build
+./build.sh
 
 # Run
-./build/chess_engine
+./run.sh
 ```
 
 ## Windows (Visual Studio)
